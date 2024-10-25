@@ -1,0 +1,4 @@
+2024-10-24 17:38:01,823 - INFO - Operation: load, User: user, Data Type: dataset
+2024-10-24 17:38:20,560 - INFO - Operation: encrypt, User: user, Data Type: email
+2024-10-24 17:38:37,416 - INFO - Operation: decrypt, User: user, Data Type: email
+2024-10-24 17:51:11,167 - INFO - Operation: Audit, User: user@example.com, Data Type: General

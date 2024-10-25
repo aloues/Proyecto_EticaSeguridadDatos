@@ -1,0 +1,2 @@
+Nombre,Apellido,Correo,Telefono,Estado Civil,TransactionID,CustomerID,CustomerDOB,CustGender,CustLocation,CustAccountBalance,TransactionDate,TransactionTime,TransactionAmount (INR)
+Maria,Rodriguez,f8ebf52063788c087071549ffcae456b64163ab54e7c2d589dc1223d97c58ab8,1-800-567-890,Divorciada,T2,C2142763,4/4/57,M,JHAJJAR,2270.69,2/8/16,141858,27999.0
