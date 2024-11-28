@@ -14,7 +14,7 @@ class DataSecurityApp:
         self.root.title("InstaTransaction")
         self.root.geometry("800x600")
         self.root.configure(bg='#003366')  # Fondo azul marino
-        self.df = pd.read_csv('archivos/combined_dataset.csv')
+        self.df = pd.read_csv('archivos/combined_dataset_protected.csv')
         self.restricted_data = []  # Almacena la configuración de datos restringidos
         self.info_shown = False  # Controla si la información del usuario está visible
         self.show_consent_message()
@@ -143,7 +143,7 @@ class DataSecurityApp:
                 if self.is_valid_password(password):
                     # Guarda la nueva contraseña hasheada en el DataFrame
                     self.df.loc[self.df['ID'] == customer_id, 'Password'] = sha256(password.encode()).hexdigest()
-                    self.df.to_csv('archivos/combined_dataset.csv', index=False)
+                    self.df.to_csv('archivos/combined_dataset_protected.csv', index=False)
                     self.info_label.config(text="Contraseña creada exitosamente. Ahora puede iniciar sesión.")
                 else:
                     self.info_label.config(text="La contraseña no cumple con los requisitos. Intente nuevamente.")
@@ -247,12 +247,14 @@ class DataSecurityApp:
                               font=("Arial", 14), fg="white", bg="#003366")
         info_label.pack(pady=10)
 
-        # Información detallada
-        user_info_text = (f"Nombre: {self.user_data['Nombre']}\n"
-                          f"Apellido: {self.user_data['Apellido']}\n"
-                          f"Ubicación: {self.user_data['CustLocation']}\n"
-                          f"Correo: {self.user_data['Correo']}\n"
-                          f"Estado Civil: {self.user_data['Estado Civil']}")
+        # Muestra información detallada del usuario, aplicando restricciones si corresponde
+        user_info_text = (
+            f"Nombre: {self.user_data['Nombre']}\n"
+            f"Apellido: {self.user_data['Apellido']}\n"
+            f"Ubicación: {self.restricted_info('Ubicación', self.user_data['CustLocation'])}\n"
+            f"Correo: {self.restricted_info('Correo', self.user_data['Correo'])}\n"
+            f"Estado Civil: {self.restricted_info('Estado Civil', self.user_data['Estado Civil'])}"
+        )
         user_info_label = tk.Label(self.content_frame, text=user_info_text, font=("Arial", 12), fg="white", bg="#003366", justify="left")
         user_info_label.pack(anchor="w", padx=20)
 
@@ -276,6 +278,53 @@ class DataSecurityApp:
         """
         policy_label = tk.Label(self.content_frame, text=privacy_policy_text, font=("Arial", 10), fg="white", bg="#003366", wraplength=600, justify="left")
         policy_label.pack(pady=5)
+
+    def restricted_info(self, data_type, data_value):
+        """Devuelve 'Dato Restringido' si el tipo de dato está restringido."""
+        return "Dato Restringido" if data_type in self.restricted_data else data_value
+
+    def restrict_data_usage(self):
+        # Ventana de restricción de datos
+        restrict_window = tk.Toplevel(self.root)
+        restrict_window.title("Restringir Uso de Datos")
+        restrict_window.geometry("300x250")
+
+        tk.Label(restrict_window, text="Seleccione hasta 2 datos para restringir su uso:").pack(pady=10)
+
+        # Variables de selección para cada opción
+        self.restrict_email_var = tk.BooleanVar()
+        self.restrict_phone_var = tk.BooleanVar()
+        self.restrict_status_var = tk.BooleanVar()
+        self.restrict_location_var = tk.BooleanVar()
+
+        # Creación de los checkboxes
+        email_check = ttk.Checkbutton(restrict_window, text="Correo", variable=self.restrict_email_var, command=self.limit_restriction)
+        phone_check = ttk.Checkbutton(restrict_window, text="Teléfono", variable=self.restrict_phone_var, command=self.limit_restriction)
+        status_check = ttk.Checkbutton(restrict_window, text="Estado Civil", variable=self.restrict_status_var, command=self.limit_restriction)
+        location_check = ttk.Checkbutton(restrict_window, text="Ubicación", variable=self.restrict_location_var, command=self.limit_restriction)
+
+        # Posicionamiento de los checkboxes
+        email_check.pack(pady=5)
+        phone_check.pack(pady=5)
+        status_check.pack(pady=5)
+        location_check.pack(pady=5)
+
+        def apply_restriction():
+            # Guardar los datos restringidos seleccionados
+            self.restricted_data = [data for data, var in zip(
+                ["Correo", "Teléfono", "Estado Civil", "Ubicación"],
+                [self.restrict_email_var, self.restrict_phone_var, self.restrict_status_var, self.restrict_location_var]
+            ) if var.get()]
+            
+            if len(self.restricted_data) <= 2:
+                messagebox.showinfo("Restricción Aplicada", f"Ha restringido el uso de: {', '.join(self.restricted_data)}.")
+                restrict_window.destroy()
+            else:
+                messagebox.showwarning("Límite de Restricción", "Solo puede seleccionar hasta 2 datos para restringir.")
+
+        # Botón para aplicar la restricción
+        ttk.Button(restrict_window, text="Aplicar Restricción", command=apply_restriction).pack(pady=20)
+
 
     def check_policy_update(self):
         """
@@ -374,7 +423,7 @@ class DataSecurityApp:
         def save_changes():
             self.df.loc[self.df['ID'] == self.user_data['ID'], 'Correo'] = email_entry.get()
             self.df.loc[self.df['ID'] == self.user_data['ID'], 'Telefono'] = phone_entry.get()
-            self.df.to_csv('archivos/combined_dataset.csv', index=False)
+            self.df.to_csv('archivos/combined_dataset_protected.csv', index=False)
             self.user_data = self.df[self.df['ID'] == self.user_data['ID']].iloc[0]
             messagebox.showinfo("Éxito", "Datos actualizados exitosamente.")
             edit_window.destroy()
@@ -443,7 +492,7 @@ class DataSecurityApp:
         response = messagebox.askyesno("Eliminar Cuenta", "¿Está seguro de que desea eliminar su cuenta y todos los datos asociados?")
         if response:
             self.df = self.df[self.df['ID'] != self.user_data['ID']]
-            self.df.to_csv('archivos/combined_dataset.csv', index=False)
+            self.df.to_csv('archivos/combined_dataset_protected.csv', index=False)
             messagebox.showinfo("Cuenta Eliminada", "Su cuenta ha sido eliminada exitosamente.")
             self.logout()
 

@@ -226,13 +226,140 @@ El proyecto adopta el enfoque de Privacidad por Diseño desde la fase inicial, l
 
 - **Blockchain para Integridad de Datos:** Evaluar la implementación de tecnología blockchain para mejorar la integridad y trazabilidad de los datos sensibles, lo cual puede ser especialmente útil en ambientes donde la manipulación de datos es un riesgo crítico.
 
-### Conclusión
+# Parte 3 Privacidad y Ética en el manejo de datos
 
-Este proyecto subraya la importancia de una gestión adecuada y ética de la seguridad de los datos en el sector financiero, destacando los principales logros y compromisos del proyecto:
+## Introducción
 
-- **Tecnología Avanzada:** Implementación de encriptación AES-256 y uso de TLS 1.3 para asegurar la protección de los datos tanto en reposo como en tránsito.
-- **Cumplimiento Regulatorio:** Adherencia a normativas internacionales y locales, asegurando que todas las operaciones cumplen con estándares como el GDPR y la Ley Peruana de Protección de Datos.
-- **Reducción de Riesgos:** Implementación de medidas que disminuyen el riesgo de brechas de seguridad, incluyendo autenticación de dos factores y políticas de privacidad claras.
-- **Confianza del Cliente:** Mejora de la percepción de seguridad entre los clientes, lo que refuerza la confianza y la relación a largo plazo con el banco.
-- **Educación y Concientización:** Programas continuos de formación y concientización para el personal, fomentando una cultura de seguridad de datos sólida y consciente.
-- **Preparación para el Futuro:** Investigación y adopción proactiva de nuevas tecnologías como la encriptación homomórfica y soluciones de inteligencia artificial, preparando al banco para enfrentar desafíos futuros en seguridad de datos.
+En esta etapa del proyecto, abordaremos tres áreas críticas de privacidad y ética en el manejo de datos:
+
+1. Privacidad Diferencial: Implementaremos técnicas de privacidad diferencial para proteger la información sensible mientras mantenemos la utilidad de los datos.
+2. Evaluación de Impacto en la Protección de Datos (DPIA): Identificaremos los riesgos asociados al flujo de vida de los datos y documentaremos las medidas para mitigarlos.
+3. Análisis de Sesgo: Analizaremos el sesgo presente en nuestro conjunto de datos y su posible impacto ético en las decisiones basadas en el modelo.
+
+## 1. Implementación de Privacidad Diferencial
+
+La privacidad diferencial asegura que las respuestas obtenidas de un conjunto de datos no revelen información específica de un individuo, incluso si se combinan múltiples consultas. Para implementar esta técnica se realizo en dos atributos sensibles:
+
+1. TransactionAmount (INR): El monto de las transacciones financieras es un dato crítico que puede revelar información sensible.
+2. CustAccountBalance: El saldo de la cuenta también es un dato que requiere protección.
+
+### Riudo laplaciano
+
+```python
+def add_differential_privacy(df, column, epsilon):
+    sensitivity = df[column].max() - df[column].min()
+    scale = sensitivity / epsilon
+    noise = np.random.laplace(0, scale, size=len(df[column]))
+    df[column] += noise
+    return df
+
+# Aplicar privacidad diferencial al monto de transacción
+epsilon = 1.0  # Nivel de privacidad
+df = add_differential_privacy(df, 'TransactionAmount (INR)', epsilon)
+```
+### Impacto en la Utilidad de los Datos
+La privacidad diferencial introduce ruido, lo que puede afectar la precisión de los análisis posteriores. En esta implementación, ajustamos epsilon para equilibrar privacidad y utilidad.
+
+- Epsilon bajo (mayor privacidad): Más ruido, menor precisión.
+- Epsilon alto (menor privacidad): Menos ruido, mayor precisión.
+
+### Reflexión Ética
+
+- Beneficio: Reduce el riesgo de reidentificación y protege la privacidad de los usuarios.
+- Riesgo: El ruido añadido puede afectar la precisión de los análisis y modelos que utilicen los datos.
+
+## 2. Evaluación de Impacto en la Protección de Datos (DPIA)
+
+El DPIA permite identificar y mitigar riesgos en el flujo de vida de los datos. A continuación, presentamos un resumen de los resultados de nuestra evaluación:
+
+### 2.1 Identificación de Riesgos
+
+#### Ciclo de Vida de los Datos:
+- **Recolección**: Los datos personales como `Correo` y `Teléfono` se recopilan durante el registro del usuario.
+- **Procesamiento**: Los datos transaccionales son analizados para ofrecer servicios personalizados.
+- **Almacenamiento**: Los datos son almacenados en un archivo CSV, protegido mediante encriptación AES-256.
+- **Acceso**: El acceso está restringido a usuarios autenticados.
+
+#### Principales Riesgos:
+1. **Fuga de Datos**: Exposición de datos personales en caso de un ataque cibernético.
+2. **Reidentificación**: Uso de atributos únicos para identificar a individuos.
+3. **Sesgo Algorítmico**: Discriminación inadvertida basada en características sensibles como género o ubicación.
+
+### 2.2 Medidas de Mitigación
+
+1. **Encriptación de Datos**:
+   - Los datos sensibles se encriptan con AES-256 antes de ser almacenados.
+   
+   ```python
+   encrypted_email = encrypt("afabriziopr@ejemplo.com")
+    ```
+2. **Autenticación de Dos Factores (2FA)**:
+
+Implementación de 2FA para prevenir accesos no autorizados.
+
+3. **Privacidad Diferencial**:
+
+Aplicación de ruido Laplaciano a atributos sensibles para evitar reidentificación.
+
+4.**Restricción de Accesos**:
+
+Los usuarios pueden restringir el uso de hasta dos datos personales.
+
+5.**Auditorías Periódicas**:
+
+Revisión periódica de los sistemas para garantizar el cumplimiento de las políticas de privacidad.
+
+## 3. Análisis de Sesgo en el Dataset
+
+El sesgo en los datos puede llevar a decisiones discriminatorias y resultados injustos. Para abordar este aspecto:
+
+### 3.1 Identificación de Sesgo
+
+#### Dataset Original:
+- **Ubicación (`CustLocation`)**: Puede haber un sesgo geográfico si los datos están desbalanceados.
+- **Género (`Gender`)**: Desbalance entre hombres y mujeres podría influir en análisis o servicios ofrecidos.
+- **Monto de Transacción**: Si se concentra en un rango socioeconómico, podría limitar la representatividad.
+
+#### Ejemplo de Análisis:
+
+```python
+import pandas as pd
+
+# Verificar distribución de género
+gender_distribution = df['Gender'].value_counts(normalize=True) * 100
+print(gender_distribution)
+
+# Verificar distribución geográfica
+location_distribution = df['CustLocation'].value_counts(normalize=True) * 100
+print(location_distribution)
+```
+
+### 3.2 Mitigación del Sesgo
+1. Balanceo de Datos:
+
+- Si una categoría está sobrerrepresentada, aplicamos técnicas de submuestreo o sobremuestreo.
+2. Monitoreo de Resultados:
+
+- Evaluar el impacto de decisiones basadas en los datos para identificar patrones discriminatorios.
+3. Aumentar Transparencia:
+
+- Documentar cómo se utilizan los datos y tomar medidas para explicar las decisiones tomadas por el modelo.
+
+
+## Conclusión
+
+Este proyecto subraya la importancia de una gestión ética y rigurosa de la seguridad y privacidad de los datos, especialmente en sectores sensibles como el financiero. A través de la implementación de diversas medidas, se han alcanzado los siguientes logros y compromisos:
+
+- **Cumplimiento con Normativas Internacionales:** La adopción de estándares como el GDPR y la Ley Peruana de Protección de Datos garantiza que todas las operaciones cumplen con las normativas vigentes, asegurando la protección de la información sensible.
+
+- **Privacidad Diferencial y Reducción de Riesgos:** La implementación de técnicas avanzadas como la privacidad diferencial y el uso de encriptación AES-256 ha minimizado significativamente el riesgo de reidentificación y fuga de datos, asegurando un equilibrio entre privacidad y utilidad del conjunto de datos.
+
+- **Transparencia y Confianza:** La documentación de decisiones, la implementación de políticas claras de privacidad y la notificación de cambios en estas políticas fortalecen la confianza de los usuarios y refuerzan la relación a largo plazo con ellos.
+
+- **Análisis Ético del Sesgo:** El análisis de sesgos en el dataset ha permitido identificar posibles riesgos de discriminación en decisiones basadas en los datos. Se tomaron medidas para balancear las categorías y garantizar que los modelos y análisis sean inclusivos y representativos.
+
+- **Educación y Formación Continua:** Se han desarrollado programas de concientización para el equipo, asegurando que todos los involucrados comprendan los riesgos y las mejores prácticas en la protección de datos. Esto fomenta una cultura organizacional sólida en materia de seguridad.
+
+- **Preparación para el Futuro:** La incorporación de tecnologías emergentes como la encriptación homomórfica y la inteligencia artificial en la detección de amenazas asegura que el sistema esté preparado para enfrentar desafíos futuros y nuevas normativas.
+
+En conclusión, este proyecto demuestra cómo es posible implementar medidas avanzadas de privacidad y seguridad de datos sin comprometer la utilidad del conjunto de datos. Las reflexiones éticas y técnicas realizadas no solo protegen la información sensible, sino que también aseguran que las decisiones derivadas sean transparentes, inclusivas y respetuosas de los derechos de los usuarios. Esto posiciona al proyecto como un modelo escalable y sostenible en la gestión de datos sensibles.

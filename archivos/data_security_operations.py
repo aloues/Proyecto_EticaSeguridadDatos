@@ -56,3 +56,22 @@ def authenticate_user(df, customer_id, password, role):
         if hash_data(password) == stored_password:
             return user_data.iloc[0]
     return None
+
+# import numpy as np
+
+# def add_differential_privacy(df, column, epsilon):
+#     """
+#     Añade ruido Laplaciano a una columna específica del DataFrame.
+
+#     :param df: DataFrame original
+#     :param column: Nombre de la columna a proteger
+#     :param epsilon: Parámetro de privacidad (menor epsilon = mayor privacidad)
+#     :return: DataFrame modificado con ruido añadido
+#     """
+#     if column not in df.columns:
+#         raise ValueError(f"La columna '{column}' no existe en el DataFrame.")
+#     sensitivity = df[column].max() - df[column].min()
+#     scale = sensitivity / epsilon
+#     noise = np.random.laplace(0, scale, size=len(df[column]))
+#     df[column] += noise
+#     return df
